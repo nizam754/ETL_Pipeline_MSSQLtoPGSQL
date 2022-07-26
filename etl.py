@@ -1,28 +1,33 @@
-#import needed libraries
+# import needed libraries
 from sqlalchemy import create_engine
 import pyodbc
 import pandas as pd
 import os
 
-#get password from environmnet var
-pwd = os.environ['PGPASS']
-uid = os.environ['PGUID']
-#sql db details
+# get password from environmnet var
+pwd = 'demopass'
+uid = 'etl'
+# pwd = os.environ['PGPASS']
+# uid = os.environ['PGUID']
+# sql db details
 driver = "{SQL Server Native Client 11.0}"
-server = "haq-PC"
+server = "DESKTOP-FL7N0H6"
 database = "AdventureWorks2017;"
 
-#extract data from sql server
+
+# extract data from sql server
 def extract():
+    global src_conn
     try:
-        src_conn = pyodbc.connect('DRIVER=' + driver + ';SERVER=' + server + '\SQLEXPRESS' + ';DATABASE=' + database + ';UID=' + uid + ';PWD=' + pwd)
+        src_conn = pyodbc.connect(driver='{SQL Server Native Client 11.0}', host=server, database=database, user=uid, password=pwd)
+            # pyodbc.connect('DRIVER=' + driver + ';SERVER=' + server + '\SQLEXPRESS' + ';DATABASE=' + database + ';UID=' + uid + ';PWD=' + pwd)
         src_cursor = src_conn.cursor()
         # execute query
         src_cursor.execute(""" select  t.name as table_name
         from sys.tables t where t.name in ('DimProduct','DimProductSubcategory','DimProductSubcategory','DimProductCategory','DimSalesTerritory','FactInternetSales') """)
         src_tables = src_cursor.fetchall()
         for tbl in src_tables:
-            #query and load save data to dataframe
+            # query and load save data to dataframe
             df = pd.read_sql_query(f'select * FROM {tbl[0]}', src_conn)
             load(df, tbl[0])
     except Exception as e:
@@ -30,7 +35,8 @@ def extract():
     finally:
         src_conn.close()
 
-#load data to postgres
+
+# load data to postgres
 def load(df, tbl):
     try:
         rows_imported = 0
@@ -44,8 +50,9 @@ def load(df, tbl):
     except Exception as e:
         print("Data load error: " + str(e))
 
+
 try:
-    #call extract function
+    # call extract function
     extract()
 except Exception as e:
     print("Error while extracting data: " + str(e))
